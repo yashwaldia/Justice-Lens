@@ -1,19 +1,11 @@
-import os, sys, shutil, time
-
-from flask import Flask, request, jsonify, render_template,send_from_directory
+import os
+from flask import Flask, request, render_template, send_from_directory
 import pandas as pd
 import joblib
 from sklearn.ensemble import RandomForestClassifier
-import numpy as np
-import urllib.request
-import json
 from geopy.geocoders import Nominatim
 
-
-
 app = Flask(__name__)
-
-
 
 @app.route('/')
 def root():
@@ -39,66 +31,67 @@ def about():
 def contact():
     return render_template('contact.html')
 
-@app.route('/result.html', methods = ['POST'])
+@app.route('/result.html', methods=['POST'])
 def predict():
-    rfc = joblib.load('model/rf_model')
-    print('model loaded')
+    # Load the trained Random Forest model
+    rfc = joblib.load('C:/Users/Yash Waldia/Desktop/crime1/PAASBAAN-crime-prediction/model/rf_model.pkl')
 
     if request.method == 'POST':
+        # Check if 'Timestamp' key exists in form data
+        if 'Timestamp' not in request.form:
+            return render_template('result.html', prediction='Error: Timestamp key is missing')
 
+        # Get user inputs
         address = request.form['Location']
-        geolocator = Nominatim()
-        location = geolocator.geocode(address,timeout=None)
-        print(location.address)
-        lat=[location.latitude]
-        log=[location.longitude]
-        latlong=pd.DataFrame({'latitude':lat,'longitude':log})
-        print(latlong)
+        Timestamp = request.form['Timestamp']
 
-        DT= request.form['timestamp']
-        latlong['timestamp']=DT
-        data=latlong
-        cols = data.columns.tolist()
-        cols = cols[-1:] + cols[:-1]
-        data = data[cols]
+        # Convert address to Lat and Long
+        geolocator = Nominatim(user_agent="crime_prediction_app")
+        location = geolocator.geocode(address, timeout=None)
+        if location is None:
+            return render_template('result.html', prediction='Error: Location not found')
 
-        data['timestamp'] = pd.to_datetime(data['timestamp'].astype(str), errors='coerce')
-        data['timestamp'] = pd.to_datetime(data['timestamp'], format = '%d/%m/%Y %H:%M:%S')
-        column_1 = data.ix[:,0]
-        DT=pd.DataFrame({"year": column_1.dt.year,
-              "month": column_1.dt.month,
-              "day": column_1.dt.day,
-              "hour": column_1.dt.hour,
-              "dayofyear": column_1.dt.dayofyear,
-              "week": column_1.dt.week,
-              "weekofyear": column_1.dt.weekofyear,
-              "dayofweek": column_1.dt.dayofweek,
-              "weekday": column_1.dt.weekday,
-              "quarter": column_1.dt.quarter,
-             })
-        data=data.drop('timestamp',axis=1)
-        final=pd.concat([DT,data],axis=1)
-        X=final.iloc[:,[1,2,3,4,6,10,11]].values
-        my_prediction = rfc.predict(X)
-        if my_prediction[0][0] == 1:
-            my_prediction='Predicted crime : Act 379-Robbery'
-        elif my_prediction[0][1] == 1:
-            my_prediction='Predicted crime : Act 13-Gambling'
-        elif my_prediction[0][2] == 1:
-            my_prediction='Predicted crime : Act 279-Accident'
-        elif my_prediction[0][3] == 1:
-            my_prediction='Predicted crime : Act 323-Violence'
-        elif my_prediction[0][4] == 1:
-            my_prediction='Predicted crime : Act 302-Murder'
-        elif my_prediction[0][5] == 1:
-            my_prediction='Predicted crime : Act 363-kidnapping'
+        Lat = location.latitude
+        Long = location.longitude
+
+        # Prepare data for prediction
+        data = pd.DataFrame({'Lat': [Lat], 'Long': [Long], 'Timestamp': [Timestamp]})
+        data['Timestamp'] = pd.to_datetime(data['Timestamp'])
+
+        # Extract features from Timestamp
+        data['year'] = data['Timestamp'].dt.year
+        data['month'] = data['Timestamp'].dt.month
+        data['day'] = data['Timestamp'].dt.day
+        data['hour'] = data['Timestamp'].dt.hour
+
+        # Select relevant features for prediction
+        X = data[['Lat', 'Long', 'year', 'month', 'day', 'hour']].values
+
+        # Make prediction
+        prediction = rfc.predict(X)
+
+        # Map predicted labels to crime types
+        crime_mapping = {
+            0: 'Accident',
+            1: 'Drug Violation',
+            2: 'Harassment',
+            3: 'Missing Persons',
+            4: 'Robbery',
+            5: 'Towed'
+        }
+
+        # Get the predicted crime type
+        if len(prediction) == 1:
+            # Convert prediction to int if necessary and retrieve crime label
+            predicted_crime = crime_mapping.get(int(prediction[0]), 'Place is safe, no crime expected at that Timestamp.')
         else:
-            my_prediction='Place is safe no crime expected at that timestamp.'
+            # Handle the case where prediction is not a single value (e.g., an array)
+            if len(prediction) == 0:
+                predicted_crime = 'Error: No prediction available'
+            else:
+                predicted_crime = 'Error: Invalid prediction format'
 
-
-
-    return render_template('result.html', prediction = my_prediction)
-
+    return render_template('result.html', prediction=predicted_crime)
 
 if __name__ == '__main__':
-    app.run(debug = True)
+    app.run(debug=True)
