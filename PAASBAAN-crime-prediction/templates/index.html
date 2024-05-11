@@ -74,14 +74,35 @@
 	<div class="col-md-12">
 
 							<div class="form-group">
-									<div align="center">
-										<form action = "{{ url_for('predict') }}" method = "POST">
-												<input type="text" class="form-control" name="Location" placeholder="Enter Location"><br>
-												<input type="datetime-local" class="form-control" name="Timestamp" step="1"><br>
-												<input type="submit" value="Predict" class="btn btn-primary">
-												<input type="reset" value="Reset Data" class="btn btn-primary">
-												</form>
-									</div>
+								<div align="center">
+									<form action="{{ url_for('predict') }}" method="POST">
+										
+										<br>
+										<div class="col-md-12">
+											<div class="form-group">
+												<input type="number" step="any" class="form-control" name="latitude" id="latitude" placeholder="Enter Latitude">
+											</div>
+										</div>
+										<br>
+										<div class="col-md-12">
+											<div class="form-group">
+												<input type="number" step="any" class="form-control" name="longitude" id="longitude" placeholder="Enter Longitude">
+											</div>
+										</div>
+										<br>
+										<div class="col-md-12">
+											<div class="form-group">
+												<input type="datetime-local" class="form-control" name="timestamp" id="timestamp" step="1">
+											</div>
+										</div>
+										<br><br>
+										<div class="col-md-12">
+											<input type="submit" value="Predict" class="btn btn-primary">
+											<input type="reset" value="Reset Data" class="btn btn-primary">
+										</div>
+									</form>
+								</div>
+								
 							</div>
 						</div>
 	<footer>
@@ -89,7 +110,7 @@
 			<div class="container">
 				<div class="row">
 					<div class="col-md-8 col-md-offset-2 text-center">
-						<p>Copyright 2018 Paasbaan All Rights Reserved.</p>
+						<p>Copyright 2018 Justice Lens All Rights Reserved.</p>
 						<p class="fh5co-social-icons">
 							<a href="https://twitter.com/Mr_tiwariji19"><i class="icon-twitter-with-circle"></i></a>
 							<a href="https://www.facebook.com/sourabh.tiwari.94801?ref=bookmarks"><i class="icon-facebook-with-circle"></i></a>
